@@ -1,6 +1,6 @@
 import file_streams/file_stream.{type FileStream}
 import file_streams/file_stream_error.{type FileStreamError}
-import gleam/bool
+import gleam/float
 import gleam/int
 import gleam/io
 import gleam/list
@@ -26,7 +26,17 @@ pub fn main() -> Nil {
       0
     }
   }
-  echo times_reached_zero
+  echo "First Part is: " <> int.to_string(times_reached_zero)
+  let times_reached_zero = case input_result {
+    Ok(inputs) -> {
+      process_inputs_continuously(inputs, initial_dial_pointer, 0)
+    }
+    Error(err) -> {
+      io.print_error(err)
+      0
+    }
+  }
+  echo "Second Part is: " <> int.to_string(times_reached_zero)
   Nil
 }
 
@@ -52,6 +62,41 @@ pub fn process_inputs(inputs: List(String), dial_pointer: Int, acc: Int) -> Int 
         _ -> process_inputs(inputs, new_dial_pointer, acc)
       }
     }
+  }
+}
+
+pub fn process_inputs_continuously(
+  inputs: List(String),
+  dial_pointer: Int,
+  acc: Int,
+) -> Int {
+  case inputs {
+    [] -> acc
+    [input, ..inputs] -> {
+      let #(is_left, turn_amount) = process_input(input)
+
+      let distance = get_distance(dial_pointer, is_left)
+
+      let f_function = fn(x: Int, distance: Int) -> Int {
+        int.max(0, 1 + result.unwrap(int.floor_divide(x - distance, 100), 0))
+      }
+
+      let acc = acc + f_function(turn_amount, distance)
+      let new_dial_pointer = turn_dial(dial_pointer, turn_amount, is_left)
+      process_inputs_continuously(inputs, new_dial_pointer, acc)
+    }
+  }
+}
+
+fn get_distance(pointer: Int, is_left: Bool) -> Int {
+  case pointer > 0 {
+    True -> {
+      case is_left {
+        True -> pointer
+        False -> 100 - pointer
+      }
+    }
+    False -> 100
   }
 }
 
